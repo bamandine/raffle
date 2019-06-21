@@ -53,41 +53,46 @@ ipcMain.on('click-button',(event,arg)=> {
       { 
         properties: ['openFile'], 
         filters: [
-          { name: 'Excel ou CSV', extensions: ['csv', 'xls'] }
+          { name: 'CSV obligatoire', extensions: ['csv'] }
         ]
-      }, (files) =>{
+      }, (files) => {
         callbackClick(files);
       })   
   }
 })
 
 function callbackClick(files) {
-  let tickets = [];
-  let winners = [];
-
-  csv.parseFile(files[0], { headers: headersPlayers, renameHeaders: true })
-    .on('error', error => console.error(error))
-    .on('data', row => {
-        tickets.push(row);
-    })
-    .on('end', randomAndWriteFile => {
-      let i = 1;
-      while (i <= nbWinners) {
-        let winner = randomTicket(tickets);
-        winner.lot = i;
-        winners.push(winner);
-        tickets = arrayRemoveNumticket(tickets, winner);
-        i++;
-      }
-
-      csv.writeToPath(path.resolve(__dirname, 'gagnants_par_alphabetique.csv'), winners.sort(compare), { headers: headersWinners})
-      .on('error', err => console.error(err))
-      .on('finish', () => win.webContents.send('gagnants_par_alphabetique', path.resolve(__dirname, 'gagnants_par_alphabetique.csv')));
-
-      csv.writeToPath(path.resolve(__dirname, 'gagnants_par_lot.csv'), winners.sort(compareLot), { headers: headersWinners})
-      .on('error', err => console.error(err))
-      .on('finish', () => win.webContents.send('gagnants_par_lot', path.resolve(__dirname, 'gagnants_par_lot.csv')));
-    });
+  if(files==undefined){
+    console.log("No file selected");
+  } else {
+    let tickets = [];
+    let winners = [];
+  
+    csv.parseFile(files[0], { headers: headersPlayers, renameHeaders: true })
+      .on('error', error => console.error(error))
+      .on('data', row => {
+          tickets.push(row);
+      })
+      .on('end', randomAndWriteFile => {
+        let i = 1;
+        while (i <= nbWinners) {
+          let winner = randomTicket(tickets);
+          winner.lot = i;
+          winners.push(winner);
+          tickets = arrayRemoveNumticket(tickets, winner);
+          i++;
+        }
+  
+        csv.writeToPath(path.resolve(__dirname, 'gagnants_par_alphabetique.csv'), winners.sort(compare), { headers: headersWinners})
+        .on('error', err => console.error(err))
+        .on('finish', () => win.webContents.send('gagnants_par_alphabetique', path.resolve(__dirname, 'gagnants_par_alphabetique.csv')));
+  
+        csv.writeToPath(path.resolve(__dirname, 'gagnants_par_lot.csv'), winners.sort(compareLot), { headers: headersWinners})
+        .on('error', err => console.error(err))
+        .on('finish', () => win.webContents.send('gagnants_par_lot', path.resolve(__dirname, 'gagnants_par_lot.csv')));
+      });
+  }
+  
 }
 
 function randomTicket(tickets) {
