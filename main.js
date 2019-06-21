@@ -24,16 +24,6 @@ function createWindow () {
   // and load the index.html of the app.
   win.loadFile('index.html')
 
-  // Ouvre les DevTools.
-  win.webContents.openDevTools()
-
-    let nbWInners;
-      // $('#text-input').bind('input propertychange', function() {
-    //     nbWInners = this.value
-    //     console.log(nbWInners);
-    // })
-
-
   // Émit lorsque la fenêtre est fermée.
   win.on('closed', () => {
     // Dé-référence l'objet window , normalement, vous stockeriez les fenêtres
