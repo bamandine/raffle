@@ -21,7 +21,11 @@
     "fast-csv": "3.0.1"
   },
   "dependencies": {
+    "@material-ui/core": "^4.0.0-rc.0",
+    "bootstrap": "^4.3.1",
     "electron": "^5.0.4",
-    "fast-csv": "^3.0.1"
+    "fast-csv": "^3.0.1",
+    "jquery": "^3.4.1",
+    "popper.js": "^1.15.0"
   }
 }
