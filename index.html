@@ -10,6 +10,9 @@
   function clickButton(){
     ipcRenderer.send('click-button','true')
   }
+  function uploadLot(){
+    ipcRenderer.send('upload-lot','true')
+  }
   function setNbWinners(object){
     ipcRenderer.send('set-nb-winners',object.value)
   }
@@ -42,10 +45,16 @@
             <input type="number" id="nbWinners" name="nbWinners" required onchange="setNbWinners(this)" class="form-control" placeholder="Supérieur à 0" aria-label="nbWinners" aria-describedby="basic-addon1">
           </div>
         </div>
-        
+
+        <div class="row">
+          <button type="button" class="btn btn-primary btn-block" onclick="uploadLot()">Importer le fichier des lots</button>
+        </div>
+
         <div class="row">
           <button type="button" class="btn btn-primary btn-block" onclick="clickButton()">Importer le fichier des joueurs</button>
         </div>
+
+
 
         <div class="row justify-content-md-center" id="div-gagnants" style="margin-top: 10%" hidden>
           <p class="text-primary">Emplacement du fichier des gagnants (par ordre alphabétique):</p>

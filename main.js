@@ -3,9 +3,11 @@ const csv = require('fast-csv')
 const path = require('path')
 
 const headersPlayers = ["numticket","nom","prenom","numtel"]
-const headersWinners = headersPlayers.concat("lot")
+const headersWinners = headersPlayers.concat("numLot").concat("lot")
 
 let nbWinners = 0;
+let lots = [];
+
 // Gardez une reference globale de l'objet window, si vous ne le faites pas, la fenetre sera
 // fermee automatiquement quand l'objet JavaScript sera garbage collected.
 let win
@@ -51,6 +53,32 @@ ipcMain.on('click-button',(event,arg)=> {
   }
 })
 
+ipcMain.on('upload-lot',(event,arg)=> {
+  if(arg=='true'){
+    dialog.showOpenDialog(
+      { 
+        properties: ['openFile'], 
+        filters: [
+          { name: 'CSV obligatoire', extensions: ['csv'] }
+        ]
+      }, (files) => {
+        callbackClickLot(files);
+      })   
+  }
+})
+
+function callbackClickLot(lotFile) {
+  if(lotFile==undefined){
+    console.log("No file selected");
+  } else {
+    csv.parseFile(lotFile[0], { headers: ["numLot","lot"], renameHeaders: true })
+    .on('error', error => console.error(error))
+    .on('data', row => {
+        lots.push(row);
+    })
+  }
+}
+
 function callbackClick(files) {
   if(files==undefined){
     console.log("No file selected");
@@ -67,7 +95,8 @@ function callbackClick(files) {
         let i = 1;
         while (i <= nbWinners) {
           let winner = randomTicket(tickets);
-          winner.lot = i;
+          winner.numLot = lots[i-1].numLot;
+          winner.lot = lots[i-1].lot;
           winners.push(winner);
           tickets = arrayRemoveNumticket(tickets, winner);
           i++;
@@ -77,7 +106,7 @@ function callbackClick(files) {
         .on('error', err => console.error(err))
         .on('finish', () => win.webContents.send('gagnants_par_alphabetique', path.resolve(__dirname, 'gagnants_par_alphabetique.csv')));
   
-        csv.writeToPath(path.resolve(__dirname, 'gagnants_par_lot.csv'), winners.sort(compareLot), { headers: headersWinners})
+        csv.writeToPath(path.resolve(__dirname, 'gagnants_par_lot.csv'), winners.sort(compareNumLot), { headers: headersWinners})
         .on('error', err => console.error(err))
         .on('finish', () => win.webContents.send('gagnants_par_lot', path.resolve(__dirname, 'gagnants_par_lot.csv')));
       });
@@ -109,17 +138,11 @@ function compare(a, b) {
   return comparison;
 }   
 
-function compareLot(a,b) {
-  const lotA = a.lot;
-  const lotB = b.lot;
+function compareNumLot(a,b) {
+  const lotA = a.numLot;
+  const lotB = b.numLot;
 
-  let comparison = 0;
-  if (lotA >= lotB) {
-    comparison = 1;
-  } else if (lotA <= lotB) {
-    comparison = -1;
-  }
-  return comparison;
+  return lotA-lotB;
 }
 
 // Cette méthode sera appelée quant Electron aura fini
