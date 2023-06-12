@@ -5,8 +5,8 @@ const path = require('path')
 const headersPlayers = ["numticket","nom","prenom","numtel"]
 const headersWinners = headersPlayers.concat("numLot").concat("lot")
 
-let nbWinners = 0;
 let lots = [];
+let joueurs = [];
 
 // Gardez une reference globale de l'objet window, si vous ne le faites pas, la fenetre sera
 // fermee automatiquement quand l'objet JavaScript sera garbage collected.
@@ -35,11 +35,7 @@ function createWindow () {
   })
 }
 
-ipcMain.on('set-nb-winners', (event,arg) => {
-  nbWinners = arg;
-})
-
-ipcMain.on('click-button',(event,arg)=> {
+ipcMain.on('upload-joueurs',(event,arg)=> {
   if(arg=='true'){
     dialog.showOpenDialog(
       { 
@@ -48,7 +44,7 @@ ipcMain.on('click-button',(event,arg)=> {
           { name: 'CSV obligatoire', extensions: ['csv'] }
         ]
       }, (files) => {
-        callbackClick(files);
+        callbackClickJoueurs(files);
       })   
   }
 })
@@ -67,6 +63,29 @@ ipcMain.on('upload-lot',(event,arg)=> {
   }
 })
 
+ipcMain.on('do-tirage',(event,arg)=> {
+  // clean existing results
+  let winners = [];
+  let i = 1;
+  let nbTirage = lots.length < joueurs.length ? lots.length : joueurs.length;
+  while (i <= nbTirage) {
+    let winner = randomTicket(joueurs);
+    winner.numLot = lots[i-1].numLot;
+    winner.lot = lots[i-1].lot;
+    winners.push(winner);
+    joueurs = arrayRemoveNumticket(joueurs, winner);
+    i++;
+  }
+
+  csv.writeToPath(path.resolve(__dirname, 'gagnants_par_alphabetique.csv'), winners.sort(compare), { headers: headersWinners})
+  .on('error', err => console.error(err))
+  .on('finish', () => win.webContents.send('gagnants_par_alphabetique', path.resolve(__dirname, 'gagnants_par_alphabetique.csv')));
+
+  csv.writeToPath(path.resolve(__dirname, 'gagnants_par_lot.csv'), winners.sort(compareNumLot), { headers: headersWinners})
+  .on('error', err => console.error(err))
+  .on('finish', () => win.webContents.send('gagnants_par_lot', path.resolve(__dirname, 'gagnants_par_lot.csv')));
+})
+
 function callbackClickLot(lotFile) {
   if(lotFile==undefined){
     console.log("No file selected");
@@ -74,48 +93,34 @@ function callbackClickLot(lotFile) {
     csv.parseFile(lotFile[0], { headers: ["numLot","lot"], renameHeaders: true })
     .on('error', error => console.error(error))
     .on('data', row => {
-        lots.push(row);
+      console.log("lot row !", row);
+      lots.push(row);
+    })
+    .on('end', () => {
+      console.log("lots !", lots);
     })
   }
 }
 
-function callbackClick(files) {
-  if(files==undefined){
+function callbackClickJoueurs(joueursFile) {
+  if(joueursFile==undefined){
     console.log("No file selected");
   } else {
-    let tickets = [];
-    let winners = [];
-  
-    csv.parseFile(files[0], { headers: headersPlayers, renameHeaders: true })
-      .on('error', error => console.error(error))
-      .on('data', row => {
-          tickets.push(row);
-      })
-      .on('end', randomAndWriteFile => {
-        let i = 1;
-        while (i <= nbWinners) {
-          let winner = randomTicket(tickets);
-          winner.numLot = lots[i-1].numLot;
-          winner.lot = lots[i-1].lot;
-          winners.push(winner);
-          tickets = arrayRemoveNumticket(tickets, winner);
-          i++;
-        }
-  
-        csv.writeToPath(path.resolve(__dirname, 'gagnants_par_alphabetique.csv'), winners.sort(compare), { headers: headersWinners})
-        .on('error', err => console.error(err))
-        .on('finish', () => win.webContents.send('gagnants_par_alphabetique', path.resolve(__dirname, 'gagnants_par_alphabetique.csv')));
-  
-        csv.writeToPath(path.resolve(__dirname, 'gagnants_par_lot.csv'), winners.sort(compareNumLot), { headers: headersWinners})
-        .on('error', err => console.error(err))
-        .on('finish', () => win.webContents.send('gagnants_par_lot', path.resolve(__dirname, 'gagnants_par_lot.csv')));
-      });
+    csv.parseFile(joueursFile[0], { headers: headersPlayers, renameHeaders: true })
+    .on('error', error => console.error(error))
+    .on('data', row => {
+        console.log("joueurs row !", row);
+        joueurs.push(row);
+    })
+    .on('end', () => {
+        console.log("joueurs !", joueurs);
+    })
   }
-  
 }
 
-function randomTicket(tickets) {
-  return tickets[Math.floor(Math.random() * tickets.length)];
+
+function randomTicket(joueurs) {
+  return joueurs[Math.floor(Math.random() * joueurs.length)];
 }
 
 function arrayRemoveNumticket(arr, value) {
@@ -140,7 +145,7 @@ function compare(a, b) {
 
 function compareNumLot(a,b) {
   const lotA = a.numLot;
-  const lotB = b.numLot;
+  const lotB = b.numLot;randomTicket
 
   return lotA-lotB;
 }
