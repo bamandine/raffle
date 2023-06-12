@@ -16,45 +16,91 @@
   function doTirage(){
     ipcRenderer.send('do-tirage','true')
   }
+
   ipcRenderer.on('gagnants_par_alphabetique', function (event, store) {
-    document.getElementById("gagnants_par_alphabetique-file").innerHTML = store;
+    document.getElementById("gagnants_par_alphabetique-file").innerText = store;
     document.getElementById("div-gagnants").hidden = false;
   });
 
   ipcRenderer.on('gagnants_par_lot', function (event, store) {
-    document.getElementById("gagnants_par_lot-file").innerHTML = store;
+    document.getElementById("gagnants_par_lot-file").innerText = store;
     document.getElementById("div-gagnants").hidden = false;
   });
+
+  ipcRenderer.on('import-lot-success', function (event, store) {
+    document.getElementById("nb-lots").innerText = store;
+    document.getElementById("nb-lots").hidden = false;
+  });
+
+  ipcRenderer.on('import-joueurs-success', function (event, store) {
+    document.getElementById("nb-joueurs").innerText = store;
+    document.getElementById("nb-joueurs").hidden = false;
+  });
+  
 </script>
 
   <body>
     <div class="container">
-        <div class="row justify-content-md-center" style="margin-top: 10%">
-          <h1>Tirages pour la tombola</h1>
+        <div class="row m-2">
+          <h4>1. Importer les lots</h4>
         </div>
+        <div class="row">
+          <p class="text-primary">Le fichier doit contenir 2 colonnes et la première ligne doit contenir le nom des colonnes</p>
+        </div>
+
         <div class="row justify-content-md-center">
-          <p class="text-secondary">Le fichier des joueurs doit contenir 4 colonnes, dans cet ordre :</p>
+          <img src="resources/lots.png" class=".img-fluid m-1"/>
+        </div>
+
+        <div class="row justify-content-md-center">
+          <p class="alert alert-danger font-weight-bold">Le fichier doit être au format CSV : 
+            <a target="_blank" class="alert-link" href="https://www.zamzar.com/fr/convert/xls-to-csv/"><strong>Transformation en CSV en ligne ici</strong></a> 
+          </p>
+        </div>
+
+        <div class="row justify-content-md-center">
+          <button type="button" class="btn btn-primary btn-block m-1" onclick="uploadLot()">Importer le fichier des lots</button>
+        </div>
+
+        <div class="row justify-content-md-center p-1 bg-success text-white" hidden id="nb-lots"></div>
+        
+        <div class="row m-2">
+          <h4>2. Importer les joueurs</h4>
+        </div>
+        <div class="row">
+          <p class="text-secondary">Le fichier des joueurs doit contenir 4 colonnes, dans cet ordre : <br></p>
           <p class="text-primary"><strong>numero du ticket, nom, prénom, numéro de téléphone</strong></p>
           <p class="text-secondary">La première ligne du fichier doit contenir le nom des colonnes</p> 
-          <p class="text-secondary">Le fichier des joueurs doit être au format CSV : <a target="_blank" href="https://www.zamzar.com/fr/convert/xls-to-csv/">Transformation en CSV en ligne ici</a> </p>
+        </div>
+
+        <div class="row justify-content-md-center">
+          <p class="alert alert-danger font-weight-bold">Le fichier des joueurs doit être au format CSV : 
+            <a target="_blank" class="alert-link" href="https://www.zamzar.com/fr/convert/xls-to-csv/"><strong>Transformation en CSV en ligne ici</strong></a> 
+          </p>
+        </div>
+
+        <div class="row justify-content-md-center">
+          <img src="resources/entetes.png" class="img-fluid mb-1"/>
+        </div>
+    
+        <div class="row">
+          <button type="button" class="btn btn-primary btn-block mb-1" onclick="uploadJoueurs()">Importer le fichier des joueurs</button>
+        </div>
+
+        <div class="row justify-content-md-center p-1 mb-1 bg-success text-white" hidden id="nb-joueurs"></div>
+
+        <div class="row m-2">
+          <h4>3. Lancer le tirage</h4>
         </div>
 
         <div class="row">
-          <button type="button" class="btn btn-primary btn-block" onclick="uploadLot()">Importer le fichier des lots</button>
+          <button type="button" class="btn btn-primary btn-block mb-1" onclick="doTirage()">Lancer le tirage</button>
         </div>
 
-        <div class="row">
-          <button type="button" class="btn btn-primary btn-block" onclick="uploadJoueurs()">Importer le fichier des joueurs</button>
-        </div>
-
-        <div class="row">
-          <button type="button" class="btn btn-primary btn-block" onclick="doTirage()">Faire le tirage</button>
-        </div>
-
-        <div class="row justify-content-md-center" id="div-gagnants" style="margin-top: 10%" hidden>
-          <p class="text-primary">Emplacement du fichier des gagnants (par ordre alphabétique):</p>
+        <div class="row justify-content-md-center" id="div-gagnants" hidden>
+          <p class="bg-success text-white">Emplacement du fichier des gagnants (par ordre alphabétique) :<br></p>
           <pre id="gagnants_par_alphabetique-file"></pre>
-          <p class="text-primary">Emplacement du fichier des gagnants (par lot):</p>
+          <p class="bg-success text-white">Emplacement du fichier des gagnants (par lot) :<br></p>
           <pre id="gagnants_par_lot-file"></pre>
         </div>
     

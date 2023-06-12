@@ -1,6 +1,8 @@
 const { app, BrowserWindow, dialog, ipcMain} = require('electron')
 const csv = require('fast-csv') 
 const path = require('path')
+const fs = require('fs')
+const { mainModule } = require('process')
 
 const headersPlayers = ["numticket","nom","prenom","numtel"]
 const headersWinners = headersPlayers.concat("numLot").concat("lot")
@@ -16,11 +18,18 @@ function createWindow () {
   
   // Créer le browser window.
   win = new BrowserWindow({
-    width: 800,
-    height: 600,
     webPreferences: {
       nodeIntegration: true
-    }
+    },
+    icon: "resources/raffle.ico",
+    autoHideMenuBar: true,
+    title: 'Tirages pour la tombola',
+    center: true,
+    height: 950,
+    width: 1500,
+    fullscreenable: true,
+    minimizable: true,
+    closable: true
   })
 
   // and load the index.html of the app.
@@ -77,13 +86,21 @@ ipcMain.on('do-tirage',(event,arg)=> {
     i++;
   }
 
-  csv.writeToPath(path.resolve(__dirname, 'gagnants_par_alphabetique.csv'), winners.sort(compare), { headers: headersWinners})
-  .on('error', err => console.error(err))
-  .on('finish', () => win.webContents.send('gagnants_par_alphabetique', path.resolve(__dirname, 'gagnants_par_alphabetique.csv')));
+  var showOpenDialogOptions = {
+    properties: ['openDirectory'],
+    title: "Dossier de destination des résultats",
+    message: "Destination des résultats"
+  }
 
-  csv.writeToPath(path.resolve(__dirname, 'gagnants_par_lot.csv'), winners.sort(compareNumLot), { headers: headersWinners})
-  .on('error', err => console.error(err))
-  .on('finish', () => win.webContents.send('gagnants_par_lot', path.resolve(__dirname, 'gagnants_par_lot.csv')));
+  dialog.showOpenDialog(null, showOpenDialogOptions, (choosenPath) => {
+    csv.writeToPath(path.resolve(choosenPath[0], 'gagnants_par_alphabetique.csv'), winners.sort(compare), { headers: headersWinners})
+      .on('error', err => console.error(err))
+      .on('finish', () => win.webContents.send('gagnants_par_alphabetique', path.resolve(choosenPath[0], 'gagnants_par_alphabetique.csv')));
+
+    csv.writeToPath(path.resolve(choosenPath[0], 'gagnants_par_lot.csv'), winners.sort(compareNumLot), { headers: headersWinners})
+      .on('error', err => console.error(err))
+      .on('finish', () => win.webContents.send('gagnants_par_lot', path.resolve(choosenPath[0], 'gagnants_par_lot.csv')));
+  });
 })
 
 function callbackClickLot(lotFile) {
@@ -93,11 +110,10 @@ function callbackClickLot(lotFile) {
     csv.parseFile(lotFile[0], { headers: ["numLot","lot"], renameHeaders: true })
     .on('error', error => console.error(error))
     .on('data', row => {
-      console.log("lot row !", row);
       lots.push(row);
     })
     .on('end', () => {
-      console.log("lots !", lots);
+      win.webContents.send('import-lot-success', 'Nombre de lots chargés : ' + lots.length);
     })
   }
 }
@@ -109,14 +125,19 @@ function callbackClickJoueurs(joueursFile) {
     csv.parseFile(joueursFile[0], { headers: headersPlayers, renameHeaders: true })
     .on('error', error => console.error(error))
     .on('data', row => {
-        console.log("joueurs row !", row);
         joueurs.push(row);
     })
     .on('end', () => {
-        console.log("joueurs !", joueurs);
+      win.webContents.send('import-joueurs-success', 'Nombre de joueurs : ' + joueurs.length);
     })
   }
 }
+
+ipcMain.on('download-example',(event,arg)=> {
+  var exampleContent = fs.readFileSync(app.GetPath('resources/joueurs.csv'));
+  dialog.showSaveDialog({ title: 'app'}, exampleContent, function(err){ /*show error*/});
+})
+
 
 
 function randomTicket(joueurs) {
